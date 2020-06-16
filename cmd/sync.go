@@ -45,7 +45,7 @@ var syncCmd = &cobra.Command{
 		}
 
 		// timestamp recorder
-		var diskTsRecorder *db.DiskTimestampRecorder
+		var diskTsRecorder db.TimestampRecorder
 		filepath := viper.GetString("timestamp-recorder-filepath")
 		if filepath != "" {
 			diskTsRecorder, err = db.NewDiskTimestampRecorder(filepath)
