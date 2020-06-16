@@ -60,7 +60,12 @@ func NewConnection(config Config) (*Connection, error) {
 		}
 	}
 
-	c.dialInfo.Timeout = time.Second * 3
+	timeout := c.config.Timeout
+	if timeout == 0 {
+		timeout = 5 * time.Minute
+	}
+
+	c.dialInfo.Timeout = timeout
 	c.dialInfo.Username = c.config.Creds.Username
 	c.dialInfo.Password = c.config.Creds.Password
 	c.dialInfo.Mechanism = c.config.Creds.Mechanism
@@ -70,7 +75,7 @@ func NewConnection(config Config) (*Connection, error) {
 	if err != nil {
 		return nil, err
 	}
-	session.SetSocketTimeout(1 * time.Minute)
+	session.SetSocketTimeout(timeout)
 	session.SetPrefetch(1.0)
 
 	c.Session = session

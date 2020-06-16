@@ -14,7 +14,7 @@
 
 package main
 
-import "github.com/checkr/go-sync-mongo/cmd"
+import "github.com/hongshibao/go-sync-mongo/cmd"
 
 func main() {
 	cmd.Execute()
