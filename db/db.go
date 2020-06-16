@@ -119,7 +119,7 @@ func (c *Connection) Push(oplog bson.M) {
 	c.NOplog++
 }
 
-func (c *Connection) SyncOplog(dst *Connection) error {
+func (c *Connection) SyncOplog(dst *Connection, tsRecorder TimestampRecorder) error {
 	var (
 		restoreQuery bson.M
 		tailQuery    bson.M
@@ -148,10 +148,26 @@ func (c *Connection) SyncOplog(dst *Connection) error {
 		"ts": bson.M{"$gt": headResult.Timestamp},
 	}
 
+	var sinceTimestamp bson.MongoTimestamp
 	if viper.GetInt("since") > 0 {
 		sec = bson.MongoTimestamp(viper.GetInt("since"))
 		ord = bson.MongoTimestamp(viper.GetInt("ordinal"))
-		restoreQuery["ts"] = bson.M{"$gt": bson.MongoTimestamp(sec<<32 + ord)}
+		sinceTimestamp = (sec<<32 + ord)
+		restoreQuery["ts"] = bson.M{"$gt": sinceTimestamp}
+	}
+	if tsRecorder != nil {
+		recordTimestamp, err := tsRecorder.Read()
+		if err != nil {
+			log.Printf("read timestamp info from recorder failed: %v", err)
+		} else if recordTimestamp > sinceTimestamp {
+			log.Printf("Recorded timestamp (%v) is larger than since timestamp (%v), so recorded timestamp will be used",
+				recordTimestamp, sinceTimestamp)
+			restoreQuery["ts"] = bson.M{"$gt": recordTimestamp}
+			sinceTimestamp = recordTimestamp
+		} else {
+			log.Printf("Recorded timestamp (%v) is not larger than since timestamp (%v), so since timestamp will be used",
+				recordTimestamp, sinceTimestamp)
+		}
 	}
 
 	dbnames, _ := c.databaseRegExs()
@@ -165,7 +181,7 @@ func (c *Connection) SyncOplog(dst *Connection) error {
 	applyOpsResponse := ApplyOpsResponse{}
 	opCount := 0
 
-	if viper.GetInt("since") > 0 {
+	if sinceTimestamp > 0 {
 		log.Println("Restoring oplog...")
 		iter = oplog.Find(restoreQuery).Iter()
 		for iter.Next(&oplogEntry) {
@@ -198,6 +214,14 @@ func (c *Connection) SyncOplog(dst *Connection) error {
 			}
 
 			log.Println(opCount)
+
+			// update to timestamp recorder
+			if tsRecorder != nil {
+				err := tsRecorder.Write(oplogEntry.Timestamp)
+				if err != nil {
+					log.Printf("Timestamp recorder write failed: %v", err)
+				}
+			}
 		}
 
 		err = iter.Err()
@@ -236,6 +260,14 @@ func (c *Connection) SyncOplog(dst *Connection) error {
 			}
 
 			log.Println(opCount)
+
+			// update to timestamp recorder
+			if tsRecorder != nil {
+				err := tsRecorder.Write(oplogEntry.Timestamp)
+				if err != nil {
+					log.Printf("Timestamp recorder write failed: %v", err)
+				}
+			}
 		}
 
 		err = iter.Err()

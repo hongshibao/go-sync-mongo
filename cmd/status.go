@@ -5,7 +5,7 @@ import (
 	"os"
 	"strconv"
 
-	db "github.com/checkr/go-sync-mongo/db"
+	db "github.com/hongshibao/go-sync-mongo/db"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
