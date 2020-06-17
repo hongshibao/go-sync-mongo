@@ -65,7 +65,7 @@ func init() {
 	RootCmd.AddCommand(syncCmd)
 	syncCmd.Flags().Int32("since", 0, "seconds since the Unix epoch")
 	syncCmd.Flags().Int32("ordinal", 0, "incrementing ordinal for operations within a given second")
-	syncCmd.Flags().Int32("timeout", 0, "timeout in seconds for db connections")
+	syncCmd.Flags().Int32("timeout", 0, "timeout in seconds for db connections, default is 300s")
 	syncCmd.Flags().Bool("ignore-apply-error", false, "ingore error of applying oplog (true)")
 	syncCmd.Flags().String("timestamp-recorder-filepath", "", "filepath for timestamp record")
 	viper.BindPFlag("since", syncCmd.Flags().Lookup("since"))

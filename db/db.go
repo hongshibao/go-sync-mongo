@@ -61,7 +61,7 @@ func NewConnection(config Config) (*Connection, error) {
 	}
 
 	timeout := c.config.Timeout
-	if timeout == 0 {
+	if timeout <= 0 {
 		timeout = 5 * time.Minute
 	}
 
